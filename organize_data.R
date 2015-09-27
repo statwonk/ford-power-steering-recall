@@ -10,7 +10,8 @@ production_data <- function() {
   tbl_df(
     rbind(collect(tbl(vehicle_production_database, "Fusion")),
           collect(tbl(vehicle_production_database, "Milan")),
-          collect(tbl(vehicle_production_database, "MKZ"))))
+          collect(tbl(vehicle_production_database, "MKZ")))) %>%
+    rename(vin = VIN) # lower case for join to failure data
 }
 
 failure_data <- function() {
@@ -25,10 +26,9 @@ failure_data <- function() {
 
   aws_source <- tbl(failure_database, "t_A_Import") %>%
     # It seems the model type is not provided in this
-    # data source.
-    mutate(model = NA) %>%
+    # data source. However this can be uniquely
+    # identified from the production database.
     select(vin = VIN_CD,
-           model, # see comment above.
            model_year = MDL_YR,
            production_date = PRODN_DT,
            report_date = RPR_DT,
@@ -37,9 +37,34 @@ failure_data <- function() {
            data_source = Source,
            category_of_incident = Cat)
 
+  # AWS doesn't include a model field, but since models
+  # are unique within the included censored blocks of VIN
+  # identification numbers, we can join this from the
+  # production database.
+  production_data() %>%
+    group_by(vin, model) %>%
+    summarise(count = n())
+  # Source: local data frame [1 x 2]
+  #
+  # non_unique_model_per_vin count
+  # (lgl) (int)
+  # 1                    FALSE   424
+
+  aws_source <- left_join(
+    collect(aws_source),
+    production_data() %>%
+      filter(!duplicated(vin)) %>%
+      select(vin, model))
+
+  # The CQIS doesn't uniquely identify models.
+  # For example, Fusions Hybrid or not are identified in the same way
+  # collect(tbl(failure_database, "t_C_Header") %>% group_by(VEHICLE_DESC) %>% summarise(count = n()))
+  # Let's use the more specific production data to more uniquely identify models for reliability
+  # analysis.
+
+
   cqis_source <- tbl(failure_database, "t_C_Header") %>%
     select(vin = VIN_NUMBER,
-           model = VEHICLE_DESC,
            model_year = MODEL_YEAR,
            production_date = PROD_DATE,
            report_date = REPORT_DATE,
@@ -47,6 +72,12 @@ failure_data <- function() {
            duplicate_report = Dup,
            data_source = Source,
            category_of_incident = Cat)
+
+  cqis_source <- left_join(
+    collect(cqis_source),
+    production_data() %>%
+      filter(!duplicated(vin)) %>%
+      select(vin, model))
 
   fmc360_source <- tbl(failure_database, "t_M3_Header") %>%
     # Production date is not included in this database,
@@ -69,8 +100,8 @@ failure_data <- function() {
   # be to de-duplicate reports.
 
   tbl_df(
-    rbind(collect(aws_source),
-          collect(cqis_source),
+    rbind(aws_source, # already collected when joining models from production database.
+          cqis_source, # already collected when joining models from production database.
           collect(fmc360_source)))
 }
 
