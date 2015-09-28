@@ -136,10 +136,12 @@ ggplot(d %>% mutate(production_date = as.POSIXct(as.character(production_date)),
        aes(x = report_date,
            fill = factor(MY))) +
   geom_histogram(binwidth = 60*60*24*5) +
+  scale_fill_discrete(name = "Model Year") +
   xlab("") +
   ylab("Reports by week") +
   ggtitle("Ford Power Steering Reports per Week") +
+  theme_bw(base_size = 25) +
   custom_theme() +
-  theme(strip.text = element_text(size = 40, face = "bold"))
+  theme(axis.text = element_text(size = 20, face = "bold"))
 
 
