@@ -53,3 +53,13 @@ createSurvivalFrame <- function(f.survfit){
   # return frame
   return(f.frame)
 }
+
+custom_theme <- function() {
+  theme(axis.text = element_text(colour = "black", face = "bold"),
+        axis.text.y = element_text(size = "18"),
+        panel.grid.major.y = element_line(colour = "black"),
+        panel.grid.major.x = element_line(colour = "black"),
+        panel.grid.minor = element_blank(),
+        legend.position = "top",
+        legend.title = element_text(size = 22))
+}

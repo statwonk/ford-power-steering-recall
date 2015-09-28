@@ -46,24 +46,21 @@ d <- left_join(
     censor = ifelse(!is.na(report_date), 1, 0),
     model_by_year = paste(model, MY, sep = "_"))
 
-failure_rates <- survfit(Surv(time_to_failure, censor) ~ factor(MY), data = d)
+model_year_km <- survfit(Surv(time_to_failure, censor) ~ factor(MY), data = d)
+model_year_km <- createSurvivalFrame(model_year_km)
+model_year_km$strata <- gsub("factor\\(MY\\)\\=", "", model_year_km$strata)
 
 source("plotting.R")
-
-fit <- createSurvivalFrame(failure_rates)
-# fit$strata <- gsub("factor\\(model_by_year\\)\\=", "", fit$strata)
-fit$strata <- gsub("factor\\(MY\\)\\=", "", fit$strata)
-
-ggplot(data = fit,
+ggplot(data = model_year_km,
        aes(colour = strata,
            fill = strata,
            x = time)) +
-  geom_line(aes(y = 1 - surv),
-            size = 1) +
   geom_ribbon(aes(ymin = 1 - upper,
                   ymax = 1 - lower),
               size = 0.5,
               alpha = 0.8) +
+  geom_line(aes(y = 1 - surv),
+            size = 1) +
   scale_colour_discrete(name = "", guide = "none") +
   scale_fill_discrete(name = "Model Year") +
   scale_y_continuous(labels = percent,
@@ -71,14 +68,67 @@ ggplot(data = fit,
   scale_x_continuous(labels = comma,
                      breaks = seq(0, 30, 1)) +
   theme_bw(base_size = 25) +
-  xlab("Years to power steering failure") +
+  xlab("Years from production") +
+  ylab("Cumulative Percentage Failing") +
+  ggtitle("Ford Power Steering Failure Rates")
+
+model_km <- survfit(Surv(time_to_failure, censor) ~ factor(model), data = d)
+model_km <- createSurvivalFrame(model_km)
+model_km$strata <- gsub("factor\\(model\\)\\=", "", model_km$strata)
+ggplot(data = model_km,
+       aes(colour = strata,
+           fill = strata,
+           x = time)) +
+  geom_ribbon(aes(ymin = 1 - upper,
+                  ymax = 1 - lower),
+              size = 0.5,
+              alpha = 0.5) +
+  geom_line(aes(y = 1 - surv),
+            size = 1) +
+  scale_colour_discrete(name = "", guide = "none") +
+  scale_fill_discrete(name = "Model") +
+  scale_y_continuous(labels = percent,
+                     breaks = seq(0, 0.1, 0.005)) +
+  scale_x_continuous(labels = comma,
+                     breaks = seq(0, 30, 1)) +
+  theme_bw(base_size = 25) +
+  xlab("Years from production") +
   ylab("Cumulative Percentage Failing") +
   ggtitle("Ford Power Steering Failure Rates") +
-  theme(axis.text = element_text(colour = "black", face = "bold"),
-        axis.text.y = element_text(size = "18"),
-        panel.grid.major.y = element_line(colour = "black"),
-        panel.grid.major.x = element_line(colour = "black"),
-        panel.grid.minor = element_blank(),
-        legend.position = "top",
-        legend.title = element_text(size = 22))
+  custom_theme()
+
+
+model_my_km <- survfit(Surv(time_to_failure, censor) ~ factor(model) + factor(MY), data = d)
+model_my_km <- createSurvivalFrame(model_my_km)
+model_my_km$strata <- gsub("factor\\(model\\)\\=", "", model_my_km$strata)
+model_my_km$strata <- gsub("factor\\(MY\\)\\=", "", model_my_km$strata)
+
+model_my_km$year <- as.vector(sapply(model_my_km$strata, FUN = function(x) { strsplit(x, ", ")[[1]][2] }))
+model_my_km$model <- as.vector(sapply(model_my_km$strata, FUN = function(x) { strsplit(x, ", ")[[1]][1] }))
+
+ggplot(data = model_my_km,
+       aes(colour = model,
+           fill = model,
+           x = time)) +
+  geom_ribbon(aes(ymin = 1 - upper,
+                  ymax = 1 - lower),
+              size = 0,
+              alpha = 0.1) +
+  geom_line(aes(y = 1 - surv),
+            size = 1) +
+  scale_colour_discrete(name = "", guide = "none") +
+  scale_fill_discrete(name = "Model") +
+  scale_y_continuous(labels = percent,
+                     breaks = seq(0, 0.1, 0.005)) +
+  scale_x_continuous(labels = comma,
+                     breaks = seq(0, 30, 1)) +
+  theme_bw(base_size = 25) +
+  xlab("Years from production") +
+  ylab("Cumulative Percentage Failing") +
+  ggtitle("Ford Power Steering Failure Rates") +
+  custom_theme() +
+  facet_wrap(~ year) +
+  theme(strip.text = element_text(size = 40, face = "bold"))
+
+
 

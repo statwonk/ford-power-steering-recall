@@ -3,7 +3,7 @@ library(RSQLite)
 
 production_data <- function() {
 
-  vehicle_production_database <- src_sqlite("unpacked_databases/61128/61128.db")
+  vehicle_production_database <- src_sqlite("/Users/statwonk/ford-power-steering-recall/unpacked_databases/61128/61128.db")
 
   # Stack all models, these will give us the date each vehicle was
   # produced so we can measure rates of failure.
@@ -16,7 +16,7 @@ production_data <- function() {
 
 failure_data <- function() {
 
-  failure_database <- src_sqlite("unpacked_databases/61129/61129.db")
+  failure_database <- src_sqlite("/Users/statwonk/ford-power-steering-recall/unpacked_databases/61129/61129.db")
 
   # Ford provides three sources that collect and report vehicle
   # failures:
