@@ -130,5 +130,16 @@ ggplot(data = model_my_km,
   facet_wrap(~ year) +
   theme(strip.text = element_text(size = 40, face = "bold"))
 
+## A look at report dates
+ggplot(d %>% mutate(production_date = as.POSIXct(as.character(production_date)),
+                    report_date = as.POSIXct(as.character(report_date))),
+       aes(x = report_date,
+           fill = factor(MY))) +
+  geom_histogram(binwidth = 60*60*24*5) +
+  xlab("") +
+  ylab("Reports by week") +
+  ggtitle("Ford Power Steering Reports per Week") +
+  custom_theme() +
+  theme(strip.text = element_text(size = 40, face = "bold"))
 
 
